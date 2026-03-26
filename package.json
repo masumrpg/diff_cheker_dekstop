@@ -1,6 +1,6 @@
 {
 	"name": "diff-checker-desktop",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Desktop diff checker application - Compare text files with ease",
 	"scripts": {
 		"start": "vite build && electrobun dev",
