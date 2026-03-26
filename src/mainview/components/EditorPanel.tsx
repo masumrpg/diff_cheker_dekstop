@@ -103,12 +103,44 @@ export function EditorPanel({
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const monaco = useMonaco();
 
-	// Register themes once monaco is available
+	// Register themes and configure compiler options once monaco is available
 	useEffect(() => {
 		if (monaco) {
+			// Define Themes
 			monaco.editor.defineTheme("synthwave-dark", synthwaveDark);
 			monaco.editor.defineTheme("synthwave-light", synthwaveLight);
 			monaco.editor.setTheme(isDark ? "synthwave-dark" : "synthwave-light");
+
+			// Configure TypeScript/JavaScript compiler options for JSX/TSX support
+			const monacoAny = monaco as any;
+			if (monacoAny.languages?.typescript?.typescriptDefaults) {
+				const compilerOptions = {
+					jsx: 2, // JsxEmit.React
+					jsxFactory: "React.createElement",
+					reactNamespace: "React",
+					allowNonTsExtensions: true,
+					allowJs: true,
+					target: 99, // ScriptTarget.Latest
+				};
+
+				monacoAny.languages.typescript.typescriptDefaults.setCompilerOptions(compilerOptions);
+				
+				// Same for JavaScript
+				if (monacoAny.languages.javascript?.javascriptDefaults) {
+					monacoAny.languages.javascript.javascriptDefaults.setCompilerOptions(compilerOptions);
+				}
+
+				// Disable semantic validation (imports, types) but keep syntax validation (typos)
+				const diagnosticsOptions = {
+					noSemanticValidation: true,
+					noSyntaxValidation: false,
+				};
+
+				monacoAny.languages.typescript.typescriptDefaults.setDiagnosticsOptions(diagnosticsOptions);
+				if (monacoAny.languages.javascript?.javascriptDefaults) {
+					monacoAny.languages.javascript.javascriptDefaults.setDiagnosticsOptions(diagnosticsOptions);
+				}
+			}
 		}
 	}, [monaco, isDark]);
 
@@ -194,7 +226,28 @@ export function EditorPanel({
 			<div className="flex-1 min-h-[300px] lg:min-h-[400px]">
 				<Editor
 					height="100%"
-					language={language}
+					path={`${title === "Original" ? "file1" : "file2"}.${
+						language === "tsx" ? "tsx" : 
+						language === "jsx" ? "jsx" : 
+						language === "typescript" ? "ts" : 
+						language === "javascript" ? "js" : 
+						language === "python" ? "py" : 
+						language === "go" ? "go" : 
+						language === "rust" ? "rs" : 
+						language === "cpp" ? "cpp" : 
+						language === "c" ? "c" : 
+						language === "java" ? "java" : 
+						language === "kotlin" ? "kt" : 
+						language === "php" ? "php" : 
+						language === "ruby" ? "rb" : 
+						language === "html" ? "html" : 
+						language === "css" ? "css" : 
+						language === "json" ? "json" : 
+						language === "sql" ? "sql" : 
+						language === "yaml" ? "yaml" : 
+						language === "markdown" ? "md" : "txt"
+					}`}
+					language={language === "jsx" ? "javascript" : language === "tsx" ? "typescript" : language}
 					value={value}
 					onChange={onChange}
 					theme={isDark ? "synthwave-dark" : "synthwave-light"}

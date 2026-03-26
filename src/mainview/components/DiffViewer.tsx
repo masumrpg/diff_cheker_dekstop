@@ -3,7 +3,7 @@ import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 
 type DiffLine = {
 	value: string;
@@ -19,6 +19,8 @@ const HLJS_MAP: Record<string, string> = {
 	plaintext: "plaintext",
 	javascript: "javascript",
 	typescript: "typescript",
+	jsx: "javascript",
+	tsx: "typescript",
 	python: "python",
 	java: "java",
 	kotlin: "kotlin",
@@ -90,15 +92,19 @@ function DiffLineRow({
 	showLineNumberOld?: boolean;
 	showLineNumberNew?: boolean;
 }) {
+	const isPlaceholder = !line.lineNumberOld && !line.lineNumberNew;
+
 	const bgClass =
-		line.type === "added"
-			? "diff-added"
-			: line.type === "removed"
-				? "diff-removed"
-				: "diff-unchanged";
+		isPlaceholder
+			? "opacity-20"
+			: line.type === "added"
+				? "diff-added"
+				: line.type === "removed"
+					? "diff-removed"
+					: "diff-unchanged";
 
 	const prefixChar =
-		line.type === "added" ? "+" : line.type === "removed" ? "-" : " ";
+		isPlaceholder ? " " : line.type === "added" ? "+" : line.type === "removed" ? "-" : " ";
 
 	const prefixColor =
 		line.type === "added"
@@ -108,7 +114,7 @@ function DiffLineRow({
 				: "text-muted-foreground/30";
 
 	return (
-		<div className={`flex font-mono text-[13px] leading-[1.6] ${bgClass} transition-colors hover:brightness-110`}>
+		<div className={`flex font-mono text-[13px] leading-[1.6] ${bgClass} transition-colors hover:brightness-110 min-h-[22px] ${isPlaceholder ? "bg-surface-2/20" : ""}`}>
 			{showLineNumberOld !== false && (
 				<span className="w-12 text-right pr-2 text-muted-foreground/50 select-none flex-shrink-0 py-px">
 					{line.lineNumberOld || ""}
@@ -123,7 +129,7 @@ function DiffLineRow({
 				{prefixChar}
 			</span>
 			<span className="flex-1 px-3 whitespace-pre py-px">
-				{renderHighlightedLine(line.value, language)}
+				{isPlaceholder ? "" : renderHighlightedLine(line.value, language)}
 			</span>
 		</div>
 	);
@@ -131,30 +137,63 @@ function DiffLineRow({
 
 export function DiffViewer({ oldLines, newLines, language, viewMode }: DiffViewerProps) {
 	const [copiedPanel, setCopiedPanel] = useState<string | null>(null);
+	const leftContainerRef = useRef<HTMLDivElement>(null);
+	const rightContainerRef = useRef<HTMLDivElement>(null);
+	const syncScrollLock = useRef<boolean>(false);
+
+	// Synchronize scrolling
+	useEffect(() => {
+		if (viewMode !== "split") return;
+
+		const left = leftContainerRef.current;
+		const right = rightContainerRef.current;
+
+		if (!left || !right) return;
+
+		let rAF: number | null = null;
+
+		const handleScroll = (source: HTMLDivElement, target: HTMLDivElement) => {
+			if (syncScrollLock.current) return;
+			
+			if (rAF !== null) {
+				cancelAnimationFrame(rAF);
+			}
+
+			rAF = requestAnimationFrame(() => {
+				syncScrollLock.current = true;
+				
+				// Only sync if there's a meaningful difference to avoid unnecessary layout thrashing
+				if (Math.abs(target.scrollTop - source.scrollTop) > 0.5) {
+					target.scrollTop = source.scrollTop;
+				}
+				if (Math.abs(target.scrollLeft - source.scrollLeft) > 0.5) {
+					target.scrollLeft = source.scrollLeft;
+				}
+				
+				// Reset lock immediately after setting position
+				// In most browsers, setting scrollTop triggers a scroll event synchronously
+				syncScrollLock.current = false;
+				rAF = null;
+			});
+		};
+
+		const leftListener = () => handleScroll(left, right);
+		const rightListener = () => handleScroll(right, left);
+
+		left.addEventListener("scroll", leftListener, { passive: true });
+		right.addEventListener("scroll", rightListener, { passive: true });
+
+		return () => {
+			if (rAF !== null) cancelAnimationFrame(rAF);
+			left.removeEventListener("scroll", leftListener);
+			right.removeEventListener("scroll", rightListener);
+		};
+	}, [viewMode]);
 
 	const copyDiff = (panel: "old" | "new" | "unified") => {
 		let text = "";
 		if (panel === "unified") {
-			const allLines: DiffLine[] = [];
-			let oi = 0, ni = 0;
-			while (oi < oldLines.length || ni < newLines.length) {
-				if (oi < oldLines.length && oldLines[oi].type === "removed") {
-					allLines.push(oldLines[oi]);
-					oi++;
-				} else if (ni < newLines.length && newLines[ni].type === "added") {
-					allLines.push(newLines[ni]);
-					ni++;
-				} else {
-					if (oi < oldLines.length) {
-						allLines.push(oldLines[oi]);
-						oi++;
-					}
-					if (ni < newLines.length && newLines[ni].type === "unchanged") {
-						ni++;
-					}
-				}
-			}
-			text = allLines
+			text = unifiedLines
 				.map((l) => {
 					const prefix = l.type === "added" ? "+" : l.type === "removed" ? "-" : " ";
 					return `${prefix} ${l.value}`;
@@ -162,41 +201,43 @@ export function DiffViewer({ oldLines, newLines, language, viewMode }: DiffViewe
 				.join("\n");
 		} else {
 			const lines = panel === "old" ? oldLines : newLines;
-			text = lines.map((l) => l.value).join("\n");
+			text = lines
+				.filter(l => l.lineNumberOld || l.lineNumberNew) // Skip placeholders
+				.map((l) => l.value)
+				.join("\n");
 		}
 		navigator.clipboard.writeText(text);
 		setCopiedPanel(panel);
 		setTimeout(() => setCopiedPanel(null), 2000);
 	};
 
-	// Unified view: merge all lines
-	const unifiedLines: DiffLine[] = [];
-	if (viewMode === "unified") {
-		let oi = 0, ni = 0;
-		while (oi < oldLines.length || ni < newLines.length) {
-			if (oi < oldLines.length && oldLines[oi].type === "removed") {
-				unifiedLines.push(oldLines[oi]);
-				oi++;
-			} else if (ni < newLines.length && newLines[ni].type === "added") {
-				unifiedLines.push(newLines[ni]);
-				ni++;
-			} else {
-				if (oi < oldLines.length) {
-					unifiedLines.push(oldLines[oi]);
-					oi++;
-				}
-				if (ni < newLines.length && newLines[ni].type === "unchanged") {
-					ni++;
-				}
+	// Unified view: merge all lines, skipping artificial placeholders
+	const unifiedLines = useMemo(() => {
+		if (viewMode !== "unified") return [];
+		
+		const lines: DiffLine[] = [];
+		let i = 0;
+		while (i < Math.max(oldLines.length, newLines.length)) {
+			const oldL = oldLines[i];
+			const newL = newLines[i];
+
+			if (oldL && oldL.lineNumberOld && oldL.type === "removed") {
+				lines.push(oldL);
+			} else if (newL && newL.lineNumberNew && newL.type === "added") {
+				lines.push(newL);
+			} else if (oldL && oldL.lineNumberOld && oldL.type === "unchanged") {
+				lines.push(oldL);
 			}
+			i++;
 		}
-	}
+		return lines;
+	}, [oldLines, newLines, viewMode]);
 
 	return (
 		<div className="space-y-3 animate-fade-in flex-1 flex flex-col min-h-0">
 			{/* Diff Stats Bar */}
 			<div className="flex items-center justify-between px-1 flex-shrink-0">
-				<DiffStats oldLines={oldLines} newLines={newLines} />
+				<DiffStats oldLines={oldLines.filter(l => l.lineNumberOld)} newLines={newLines.filter(l => l.lineNumberNew)} />
 				{viewMode === "unified" && (
 					<Button
 						variant="ghost"
@@ -235,7 +276,10 @@ export function DiffViewer({ oldLines, newLines, language, viewMode }: DiffViewe
 								)}
 							</Button>
 						</div>
-						<div className="flex-1 overflow-auto min-h-0">
+						<div 
+							ref={leftContainerRef}
+							className="flex-1 overflow-auto min-h-0 scrollbar-thin"
+						>
 							{oldLines.map((line, idx) => (
 								<DiffLineRow
 									key={`old-${idx}`}
@@ -265,7 +309,10 @@ export function DiffViewer({ oldLines, newLines, language, viewMode }: DiffViewe
 								)}
 							</Button>
 						</div>
-						<div className="flex-1 overflow-auto min-h-0">
+						<div 
+							ref={rightContainerRef}
+							className="flex-1 overflow-auto min-h-0 scrollbar-thin"
+						>
 							{newLines.map((line, idx) => (
 								<DiffLineRow
 									key={`new-${idx}`}
@@ -283,7 +330,7 @@ export function DiffViewer({ oldLines, newLines, language, viewMode }: DiffViewe
 					<div className="flex items-center justify-between px-4 py-2 border-b border-border bg-surface-2/50 flex-shrink-0">
 						<span className="font-medium text-sm text-foreground">Unified Diff</span>
 					</div>
-					<div className="flex-1 overflow-auto min-h-0">
+					<div className="flex-1 overflow-auto min-h-0 scrollbar-thin">
 						{unifiedLines.map((line, idx) => (
 							<DiffLineRow
 								key={`unified-${idx}`}

@@ -23,6 +23,8 @@ type ViewMode = "split" | "unified";
 
 function detectLanguage(content: string): string {
 	const patterns = [
+		{ regex: /<[A-Z][A-Za-z0-9]*.*>|<\/[A-Z][A-Za-z0-9]*>|<[a-z]+.*className=|<\/.*>/, lang: "tsx" },
+		{ regex: /import\s+React|from\s+['"]react['"]|className=/, lang: "jsx" },
 		{ regex: /import\s+.*from/, lang: "typescript" },
 		{ regex: /fun\s+\w+\s*\(/, lang: "kotlin" },
 		{ regex: /def\s+\w+\s*\(/, lang: "python" },
@@ -60,6 +62,12 @@ function App() {
 	const [viewMode, setViewMode] = useState<ViewMode>("split");
 	const [showBanner, setShowBanner] = useState(true);
 	const [isDark, setIsDark] = useState(true);
+	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+	const showToast = (message: string, type: "success" | "error" = "success") => {
+		setToast({ message, type });
+		setTimeout(() => setToast(null), 3000);
+	};
 
 	useEffect(() => {
 		if (isDark) {
@@ -94,6 +102,11 @@ function App() {
 
 			lines.forEach((line) => {
 				if (part.added) {
+					oldLines.push({
+						value: "",
+						type: "unchanged", // marker for placeholder
+						lineNumberOld: undefined,
+					});
 					newLines.push({
 						value: line,
 						type: "added",
@@ -104,6 +117,11 @@ function App() {
 						value: line,
 						type: "removed",
 						lineNumberOld: oldLineNumber++,
+					});
+					newLines.push({
+						value: "",
+						type: "unchanged", // marker for placeholder
+						lineNumberNew: undefined,
 					});
 				} else {
 					const unchangedLine: DiffLine = {
@@ -129,17 +147,23 @@ function App() {
 			if (file) {
 				const reader = new FileReader();
 				reader.onload = (e) => {
-					const content = e.target?.result as string;
-					if (side === "old") {
-						setOldText(content);
-					} else {
-						setNewText(content);
+					try {
+						const content = e.target?.result as string;
+						if (side === "old") {
+							setOldText(content);
+						} else {
+							setNewText(content);
+						}
+						if (autoDetect) {
+							setLanguage(detectLanguage(content));
+						}
+						setShowDiff(false);
+						showToast(`Loaded ${file.name} successfully`);
+					} catch (err) {
+						showToast("Failed to read file", "error");
 					}
-					if (autoDetect) {
-						setLanguage(detectLanguage(content));
-					}
-					setShowDiff(false);
 				};
+				reader.onerror = () => showToast("Error reading file", "error");
 				reader.readAsText(file);
 			}
 		};
@@ -175,40 +199,51 @@ function App() {
 	};
 	
 	const handleDownload = useCallback((content: string, title: string) => {
-		if (!content) return;
+		if (!content) {
+			showToast("Nothing to download", "error");
+			return;
+		}
 		
-		const extensionMap: Record<string, string> = {
-			plaintext: "txt",
-			javascript: "js",
-			typescript: "ts",
-			python: "py",
-			java: "java",
-			kotlin: "kt",
-			cpp: "cpp",
-			c: "c",
-			go: "go",
-			rust: "rs",
-			php: "php",
-			ruby: "rb",
-			html: "html",
-			css: "css",
-			json: "json",
-			sql: "sql",
-			yaml: "yaml",
-			xml: "xml",
-			markdown: "md",
-		};
-		
-		const ext = extensionMap[language] || "txt";
-		const blob = new Blob([content], { type: "text/plain" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `${title.toLowerCase()}_${new Date().getTime()}.${ext}`;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
+		try {
+			const extensionMap: Record<string, string> = {
+				plaintext: "txt",
+				javascript: "js",
+				typescript: "ts",
+				jsx: "jsx",
+				tsx: "tsx",
+				python: "py",
+				java: "java",
+				kotlin: "kt",
+				cpp: "cpp",
+				c: "c",
+				go: "go",
+				rust: "rs",
+				php: "php",
+				ruby: "rb",
+				html: "html",
+				css: "css",
+				json: "json",
+				sql: "sql",
+				yaml: "yaml",
+				xml: "xml",
+				markdown: "md",
+			};
+			
+			const ext = extensionMap[language] || "txt";
+			const filename = `${title.toLowerCase()}_${new Date().getTime()}.${ext}`;
+			const blob = new Blob([content], { type: "text/plain" });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+			showToast(`Exported as ${filename}`);
+		} catch (err) {
+			showToast("Failed to export file", "error");
+		}
 	}, [language]);
 
 	return (
@@ -322,6 +357,30 @@ function App() {
 					</span>
 				</div>
 			</footer>
+
+			{/* Custom Toast Notification */}
+			{toast && (
+				<div className="fixed bottom-12 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+					<div className={`
+						flex items-center gap-3 px-4 py-3 rounded-[12px] border shadow-2xl backdrop-blur-md
+						${toast.type === "success" 
+							? "bg-surface-2/80 border-[hsl(var(--neon-green))]/50 text-[hsl(var(--neon-green))]" 
+							: "bg-surface-2/80 border-[hsl(var(--neon-red))]/50 text-[hsl(var(--neon-red))]"
+						}
+					`}>
+						<div className={`w-2 h-2 rounded-full animate-pulse ${toast.type === "success" ? "bg-[hsl(var(--neon-green))]" : "bg-[hsl(var(--neon-red))]"}`} />
+						<span className="text-sm font-medium">{toast.message}</span>
+						<Button 
+							variant="ghost" 
+							size="icon" 
+							onClick={() => setToast(null)}
+							className="h-6 w-6 ml-2 hover:bg-white/10"
+						>
+							<X className="w-3 h-3" />
+						</Button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
