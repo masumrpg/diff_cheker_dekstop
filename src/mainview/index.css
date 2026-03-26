@@ -1,0 +1,315 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	/* ===== LIGHT MODE (Synthwave Light) ===== */
+	:root {
+		--background: 270 30% 98%;
+		--foreground: 262 30% 15%;
+
+		--card: 270 25% 95%;
+		--card-foreground: 262 30% 15%;
+
+		--popover: 270 25% 96%;
+		--popover-foreground: 262 30% 15%;
+
+		--primary: 265 89% 60%;
+		--primary-foreground: 0 0% 100%;
+
+		--secondary: 326 80% 60%;
+		--secondary-foreground: 0 0% 100%;
+
+		--muted: 270 15% 90%;
+		--muted-foreground: 262 15% 45%;
+
+		--accent: 191 80% 45%;
+		--accent-foreground: 0 0% 100%;
+
+		--destructive: 0 72% 51%;
+		--destructive-foreground: 0 0% 100%;
+
+		--border: 270 15% 88%;
+		--input: 270 15% 88%;
+		--ring: 265 89% 60%;
+		--radius: 0.625rem;
+
+		/* Synthwave custom properties */
+		--neon-purple: 265 89% 60%;
+		--neon-pink: 326 80% 58%;
+		--neon-cyan: 191 80% 45%;
+		--neon-green: 135 60% 40%;
+		--neon-yellow: 45 90% 50%;
+		--neon-red: 0 80% 55%;
+		--neon-orange: 31 90% 55%;
+
+		/* Surface layers */
+		--surface-0: 270 30% 98%;
+		--surface-1: 270 25% 95%;
+		--surface-2: 270 20% 91%;
+		--surface-3: 270 15% 86%;
+	}
+
+	/* ===== DARK MODE (Synthwave '84) ===== */
+	.dark {
+		--background: 262 25% 14%;
+		--foreground: 60 30% 96%;
+
+		--card: 261 22% 17%;
+		--card-foreground: 60 30% 96%;
+
+		--popover: 261 22% 17%;
+		--popover-foreground: 60 30% 96%;
+
+		--primary: 265 89% 78%;
+		--primary-foreground: 262 30% 10%;
+
+		--secondary: 326 100% 74%;
+		--secondary-foreground: 262 30% 10%;
+
+		--muted: 261 20% 22%;
+		--muted-foreground: 250 15% 55%;
+
+		--accent: 191 97% 77%;
+		--accent-foreground: 262 30% 10%;
+
+		--destructive: 0 72% 51%;
+		--destructive-foreground: 60 30% 96%;
+
+		--border: 261 18% 25%;
+		--input: 261 18% 25%;
+		--ring: 265 89% 78%;
+
+		/* Synthwave custom properties */
+		--neon-purple: 265 89% 78%;
+		--neon-pink: 326 100% 74%;
+		--neon-cyan: 191 97% 77%;
+		--neon-green: 135 94% 65%;
+		--neon-yellow: 65 92% 76%;
+		--neon-red: 0 100% 67%;
+		--neon-orange: 31 100% 71%;
+
+		/* Surface layers */
+		--surface-0: 262 25% 14%;
+		--surface-1: 261 22% 17%;
+		--surface-2: 261 20% 22%;
+		--surface-3: 261 18% 27%;
+	}
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+
+	body {
+		@apply bg-background text-foreground font-sans antialiased;
+		font-family: 'Inter', system-ui, -apple-system, sans-serif;
+	}
+
+	/* Override highlight.js backgrounds — no block bg behind code text */
+	.hljs {
+		background: transparent !important;
+		padding: 0 !important;
+	}
+
+	/* Custom scrollbar */
+	::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: hsl(var(--surface-0));
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: hsl(var(--surface-3));
+		border-radius: 4px;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: hsl(var(--primary) / 0.5);
+	}
+
+	/* Selection color */
+	::selection {
+		background: hsl(var(--primary) / 0.3);
+		color: hsl(var(--foreground));
+	}
+}
+
+@layer utilities {
+	/* ===== Neon glow effects ===== */
+	.glow-purple {
+		box-shadow:
+			0 0 8px hsl(var(--neon-purple) / 0.4),
+			0 0 24px hsl(var(--neon-purple) / 0.15),
+			0 0 48px hsl(var(--neon-purple) / 0.05);
+	}
+
+	.glow-pink {
+		box-shadow:
+			0 0 8px hsl(var(--neon-pink) / 0.4),
+			0 0 24px hsl(var(--neon-pink) / 0.15),
+			0 0 48px hsl(var(--neon-pink) / 0.05);
+	}
+
+	.glow-cyan {
+		box-shadow:
+			0 0 8px hsl(var(--neon-cyan) / 0.4),
+			0 0 24px hsl(var(--neon-cyan) / 0.15),
+			0 0 48px hsl(var(--neon-cyan) / 0.05);
+	}
+
+	.glow-green {
+		box-shadow:
+			0 0 8px hsl(var(--neon-green) / 0.4),
+			0 0 24px hsl(var(--neon-green) / 0.15);
+	}
+
+	/* Subtle glow for interactive elements on hover */
+	.hover-glow-purple:hover {
+		box-shadow:
+			0 0 10px hsl(var(--neon-purple) / 0.5),
+			0 0 30px hsl(var(--neon-purple) / 0.2),
+			0 0 60px hsl(var(--neon-purple) / 0.1);
+	}
+
+	.hover-glow-pink:hover {
+		box-shadow:
+			0 0 10px hsl(var(--neon-pink) / 0.5),
+			0 0 30px hsl(var(--neon-pink) / 0.2),
+			0 0 60px hsl(var(--neon-pink) / 0.1);
+	}
+
+	/* ===== Text glow ===== */
+	.text-glow-purple {
+		text-shadow:
+			0 0 7px hsl(var(--neon-purple) / 0.6),
+			0 0 20px hsl(var(--neon-purple) / 0.3);
+	}
+
+	.text-glow-pink {
+		text-shadow:
+			0 0 7px hsl(var(--neon-pink) / 0.6),
+			0 0 20px hsl(var(--neon-pink) / 0.3);
+	}
+
+	.text-glow-cyan {
+		text-shadow:
+			0 0 7px hsl(var(--neon-cyan) / 0.6),
+			0 0 20px hsl(var(--neon-cyan) / 0.3);
+	}
+
+	/* ===== Gradient text ===== */
+	.text-gradient-synthwave {
+		@apply bg-clip-text text-transparent;
+		background-image: linear-gradient(
+			135deg,
+			hsl(var(--neon-purple)),
+			hsl(var(--neon-pink)),
+			hsl(var(--neon-cyan))
+		);
+	}
+
+	/* ===== Gradient backgrounds ===== */
+	.bg-gradient-synthwave {
+		background-image: linear-gradient(
+			135deg,
+			hsl(var(--neon-purple)),
+			hsl(var(--neon-pink))
+		);
+	}
+
+	.bg-gradient-synthwave:hover {
+		background-image: linear-gradient(
+			135deg,
+			hsl(var(--neon-pink)),
+			hsl(var(--neon-cyan))
+		);
+	}
+
+	/* ===== Neon border glow ===== */
+	.border-glow-purple {
+		border-color: hsl(var(--neon-purple) / 0.5);
+		box-shadow:
+			inset 0 0 12px hsl(var(--neon-purple) / 0.05),
+			0 0 8px hsl(var(--neon-purple) / 0.15);
+	}
+
+	.border-glow-cyan {
+		border-color: hsl(var(--neon-cyan) / 0.5);
+		box-shadow:
+			inset 0 0 12px hsl(var(--neon-cyan) / 0.05),
+			0 0 8px hsl(var(--neon-cyan) / 0.15);
+	}
+
+	/* ===== Surface backgrounds ===== */
+	.bg-surface-0 {
+		background-color: hsl(var(--surface-0));
+	}
+
+	.bg-surface-1 {
+		background-color: hsl(var(--surface-1));
+	}
+
+	.bg-surface-2 {
+		background-color: hsl(var(--surface-2));
+	}
+
+	.bg-surface-3 {
+		background-color: hsl(var(--surface-3));
+	}
+
+	/* ===== Diff line backgrounds — NO block bg, only left border accent ===== */
+	.diff-added {
+		background-color: hsl(var(--neon-green) / 0.08);
+		border-left: 3px solid hsl(var(--neon-green) / 0.7);
+	}
+
+	.diff-removed {
+		background-color: hsl(var(--neon-red) / 0.08);
+		border-left: 3px solid hsl(var(--neon-red) / 0.7);
+	}
+
+	.diff-unchanged {
+		border-left: 3px solid transparent;
+	}
+
+	/* ===== Animations ===== */
+	.animate-fade-in {
+		animation: fadeIn 0.3s ease-out;
+	}
+
+	.animate-slide-up {
+		animation: slideUp 0.3s ease-out;
+	}
+
+	.animate-glow-pulse {
+		animation: glowPulse 3s ease-in-out infinite;
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	@keyframes slideUp {
+		from { opacity: 0; transform: translateY(8px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes glowPulse {
+		0%, 100% {
+			filter: brightness(1);
+			text-shadow: 0 0 7px hsl(var(--neon-purple) / 0.6), 0 0 20px hsl(var(--neon-purple) / 0.3);
+		}
+		50% {
+			filter: brightness(1.2);
+			text-shadow: 0 0 14px hsl(var(--neon-purple) / 0.8), 0 0 40px hsl(var(--neon-purple) / 0.5);
+		}
+	}
+}
