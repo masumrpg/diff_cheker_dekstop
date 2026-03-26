@@ -16,9 +16,6 @@ export default defineConfig({
 						if (id.includes("monaco-editor")) {
 							return "monaco";
 						}
-						if (id.includes("react") || id.includes("react-dom")) {
-							return "react-vendor";
-						}
 						return "vendor";
 					}
 				},
