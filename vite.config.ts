@@ -8,6 +8,22 @@ export default defineConfig({
 	build: {
 		outDir: "../../dist",
 		emptyOutDir: true,
+		chunkSizeWarningLimit: 2000,
+		rollupOptions: {
+			output: {
+				manualChunks(id) {
+					if (id.includes("node_modules")) {
+						if (id.includes("monaco-editor")) {
+							return "monaco";
+						}
+						if (id.includes("react") || id.includes("react-dom")) {
+							return "react-vendor";
+						}
+						return "vendor";
+					}
+				},
+			},
+		},
 	},
 	server: {
 		port: 5173,
