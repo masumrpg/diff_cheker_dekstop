@@ -173,6 +173,43 @@ function App() {
 		setDiffResult(null);
 		setShowDiff(false);
 	};
+	
+	const handleDownload = useCallback((content: string, title: string) => {
+		if (!content) return;
+		
+		const extensionMap: Record<string, string> = {
+			plaintext: "txt",
+			javascript: "js",
+			typescript: "ts",
+			python: "py",
+			java: "java",
+			kotlin: "kt",
+			cpp: "cpp",
+			c: "c",
+			go: "go",
+			rust: "rs",
+			php: "php",
+			ruby: "rb",
+			html: "html",
+			css: "css",
+			json: "json",
+			sql: "sql",
+			yaml: "yaml",
+			xml: "xml",
+			markdown: "md",
+		};
+		
+		const ext = extensionMap[language] || "txt";
+		const blob = new Blob([content], { type: "text/plain" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `${title.toLowerCase()}_${new Date().getTime()}.${ext}`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}, [language]);
 
 	return (
 		<div className="h-screen bg-background text-foreground flex flex-col overflow-hidden transition-colors duration-300">
@@ -230,6 +267,7 @@ function App() {
 							onChange={handleOldTextChange}
 							onFileUpload={handleFileUpload("old")}
 							onClear={() => setOldText("")}
+							onDownload={() => handleDownload(oldText, "Original")}
 							onSwitch={handleSwitch}
 							showSwitch
 							isDark={isDark}
@@ -241,6 +279,7 @@ function App() {
 							onChange={handleNewTextChange}
 							onFileUpload={handleFileUpload("new")}
 							onClear={() => setNewText("")}
+							onDownload={() => handleDownload(newText, "Changed")}
 							isDark={isDark}
 						/>
 					</div>

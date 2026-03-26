@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import Editor, { OnMount, OnChange, useMonaco } from "@monaco-editor/react";
-import { Upload, X, ArrowRightLeft } from "lucide-react";
+import { Upload, X, ArrowRightLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +82,7 @@ interface EditorPanelProps {
 	onChange: OnChange;
 	onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 	onClear: () => void;
+	onDownload: () => void;
 	onSwitch?: () => void;
 	showSwitch?: boolean;
 	isDark?: boolean;
@@ -94,6 +95,7 @@ export function EditorPanel({
 	onChange,
 	onFileUpload,
 	onClear,
+	onDownload,
 	onSwitch,
 	showSwitch = false,
 	isDark = true,
@@ -132,25 +134,33 @@ export function EditorPanel({
 				</div>
 				<div className="flex items-center gap-1">
 					{/* Upload */}
-					<label className="cursor-pointer" title="Upload file">
-						<Button
-							variant="ghost"
-							size="sm"
-							className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-							asChild
-						>
-							<span>
-								<Upload className="w-3.5 h-3.5" />
-							</span>
-						</Button>
-						<input
-							ref={fileInputRef}
-							type="file"
-							className="hidden"
-							onChange={onFileUpload}
-							accept=".txt,.md,.js,.ts,.jsx,.tsx,.html,.css,.json,.py,.java,.cpp,.c,.php,.rb,.go,.xml,.kt,.rs,.sql,.yaml,.yml"
-						/>
-					</label>
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={() => fileInputRef.current?.click()}
+						title="Upload file (Up)"
+						className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-all duration-200"
+					>
+						<Upload className="w-3.5 h-3.5" />
+					</Button>
+					<input
+						ref={fileInputRef}
+						type="file"
+						className="hidden"
+						onChange={onFileUpload}
+						accept=".txt,.md,.js,.ts,.jsx,.tsx,.html,.css,.json,.py,.java,.cpp,.c,.php,.rb,.go,.xml,.kt,.rs,.sql,.yaml,.yml"
+					/>
+
+					{/* Download (Export) */}
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={onDownload}
+						title="Export to file (Down)"
+						className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-all duration-200"
+					>
+						<Download className="w-3.5 h-3.5" />
+					</Button>
 
 					{/* Switch */}
 					{showSwitch && onSwitch && (
